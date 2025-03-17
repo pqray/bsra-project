@@ -1,14 +1,20 @@
 import React, { useState } from "react";
+import formController from "../../controllers/formController";
 import styles from "./AddForm.module.css";
 
-const AddForm: React.FC = () => {
+interface AddFormProps {
+  sendMessageToChat: (message: string) => void;
+  setTypingStatus: (status: boolean) => void;
+}
+
+const AddForm: React.FC<AddFormProps> = ({ sendMessageToChat, setTypingStatus }) => {
   const [formData, setFormData] = useState({
-    type: "",
-    description: "",
-    community: "",
-    state: "",
-    componentType: "",
-    technology: "",
+    tipo: "",
+    descricao: "",
+    comunidade: "",
+    estado: "",
+    componente: "",
+    tecnologia: "",
     name1: "",
     name2: "",
     name3: "",
@@ -16,9 +22,12 @@ const AddForm: React.FC = () => {
     interface: "",
   });
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasValidated, setHasValidated] = useState(false);
+
   const isFieldEnabled = (field: string) => {
     const fieldsOrder = [
-      "type", "description", "community", "state", "componentType", "technology",
+      "tipo", "descricao", "comunidade", "estado", "componente", "tecnologia",
       "name1", "name2", "name3", "source", "interface"
     ];
     const index = fieldsOrder.indexOf(field);
@@ -26,8 +35,61 @@ const AddForm: React.FC = () => {
     return fieldsOrder.slice(0, index).every((key) => formData[key as keyof typeof formData] !== "");
   };
 
+  const handleDropdownChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    setTypingStatus(true); // Exibir efeito de digitação no ChatAssistant
+    setIsLoading(true);
+
+    try {
+      const response = await formController.sendDropdownSelection(name, value);
+      console.log(`Resposta da API para ${name}:`, response);
+
+      if (response?.message?.length) {
+        sendMessageToChat(response.message[0]); // Enviar resposta ao ChatAssistant
+      }
+    } catch (error) {
+      sendMessageToChat(`Erro ao processar ${name}`);
+    } finally {
+      setIsLoading(false);
+      setTypingStatus(false);
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+
+    // Se o usuário altera "descricao", permite nova validação
+    if (e.target.name === "descricao") {
+      setHasValidated(false);
+    }
+  };
+
+  const validateFields = async () => {
+    if (formData.tipo && formData.descricao && !hasValidated) {
+      setTypingStatus(true);
+      setIsLoading(true);
+      try {
+        const response = await formController.validateTypeAndDescription(formData.tipo, formData.descricao);
+        console.log("Resposta da API:", response);
+
+        if (response?.message?.length) {
+          sendMessageToChat(response.message[0]);
+        }
+      } catch (error) {
+        sendMessageToChat("Erro ao validar o serviço.");
+      } finally {
+        setIsLoading(false);
+        setTypingStatus(false);
+      }
+    }
+  };
+
+  const handleBlur = (field: string) => {
+    if (field === "descricao") {
+      validateFields();
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -40,19 +102,35 @@ const AddForm: React.FC = () => {
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.rowFull}>
           <label>Tipo</label>
-          <input type="text" name="type" value={formData.type} onChange={handleChange} required />
+          <select
+            name="tipo"
+            value={formData.tipo}
+            onChange={handleChange}
+            onBlur={() => handleBlur("tipo")}
+            required
+          >
+            <option value="">Selecione...</option>
+            <option value="Microsserviço">Microsserviço</option>
+          </select>
         </div>
 
         <div className={styles.rowFull}>
           <label>Descrição</label>
-          <textarea name="description" value={formData.description} onChange={handleChange} required disabled={!isFieldEnabled("description")} />
+          <textarea
+            name="descricao"
+            value={formData.descricao}
+            onChange={handleChange}
+            onBlur={() => handleBlur("descricao")}
+            required
+            disabled={!isFieldEnabled("descricao")}
+          />
         </div>
 
         <div className={styles.row}>
           <label>Comunidade</label>
-          <select name="community" value={formData.community} onChange={handleChange} required disabled={!isFieldEnabled("community")}>
+          <select name="comunidade" value={formData.comunidade} onChange={handleDropdownChange} required disabled={!isFieldEnabled("comunidade")}>
             <option value="">Selecione...</option>
-            <option value="capitalizacao">Capitalização</option>
+            <option value="capitalizaçao">Capitalização</option>
             <option value="previdencia">Previdência</option>
             <option value="saude">Saúde</option>
             <option value="bare">Bare</option>
@@ -62,28 +140,28 @@ const AddForm: React.FC = () => {
 
         <div className={styles.row}>
           <label>Estado</label>
-          <select name="state" value={formData.state} onChange={handleChange} required disabled={!isFieldEnabled("state")}>
+          <select name="estado" value={formData.estado} onChange={handleDropdownChange} required disabled={!isFieldEnabled("estado")}>
             <option value="">Selecione...</option>
-            <option value="desenvolvimento">Em desenvolvimento</option>
-            <option value="producao">Em produção</option>
-            <option value="teste">Em teste</option>
+            <option value="em desenvolvimento">Em desenvolvimento</option>
+            <option value="em producao">Em produção</option>
+            <option value="em teste">Em teste</option>
           </select>
         </div>
 
         <div className={styles.row}>
           <label>Componente</label>
-          <select name="componentType" value={formData.componentType} onChange={handleChange} required disabled={!isFieldEnabled("componentType")}>
+          <select name="componente" value={formData.componente} onChange={handleDropdownChange} required disabled={!isFieldEnabled("componente")}>
             <option value="">Selecione...</option>
-            <option value="bff">BFF: Back-end for Front-End</option>
-            <option value="srv">SRV: Service</option>
-            <option value="fed">FED: Front-end</option>
-            <option value="lib">LIB: Library</option>
+            <option value="BFF: Back-end for Front-End">BFF: Back-end for Front-End</option>
+            <option value="SRV: Service">SRV: Service</option>
+            <option value="FED: Front-end">FED: Front-end</option>
+            <option value="LIB: Library">LIB: Library</option>
           </select>
         </div>
 
         <div className={styles.row}>
           <label>Tecnologia</label>
-          <select name="technology" value={formData.technology} onChange={handleChange} required disabled={!isFieldEnabled("technology")}>
+          <select name="tecnologia" value={formData.tecnologia} onChange={handleDropdownChange} required disabled={!isFieldEnabled("tecnologia")}>
             <option value="">Selecione...</option>
             <option value="java">Java</option>
             <option value="python">Python</option>
@@ -103,12 +181,12 @@ const AddForm: React.FC = () => {
           </div>
         </div>
 
-        <div className={styles.row}>
+        <div className={styles.rowFull}>
           <label>Fonte</label>
           <input type="text" name="source" value={formData.source} onChange={handleChange} required disabled={!isFieldEnabled("source")} />
         </div>
 
-        <div className={styles.row}>
+        <div className={styles.rowFull}>
           <label>Interface</label>
           <input type="text" name="interface" value={formData.interface} onChange={handleChange} required disabled={!isFieldEnabled("interface")} />
         </div>
