@@ -13,19 +13,16 @@ const Home: React.FC = () => {
     setIsTyping(false);
   };
 
-  const setTypingStatus = (status: boolean) => {
-    setIsTyping(status);
-  };
-
   return (
     <div className="app">
       <Header />
       <div className="container">
-        <AddForm sendMessageToChat={sendMessageToChat} setTypingStatus={setTypingStatus} />
+        <AddForm sendMessageToChat={sendMessageToChat} setTypingStatus={setIsTyping} />
         <ChatAssistant externalMessage={chatMessage} isTyping={isTyping} />
       </div>
     </div>
   );
 };
+
 
 export default Home;

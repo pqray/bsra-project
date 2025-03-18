@@ -125,3 +125,27 @@
     opacity: 0.3;
   }
 }
+.link {
+  color: #fff;
+  text-decoration: underline;
+  font-weight: bold;
+  word-break: break-word; /* Evita que links longos estourem o layout */
+}
+.link a {
+  color: #fff
+}
+
+.link:hover {
+  color: #ffeb3b; /* Destaca o link ao passar o mouse */
+}
+.downloadLink {
+  color: #fff;
+  text-decoration: underline;
+  font-weight: bold;
+  display: block;
+  margin-top: 5px;
+}
+
+.downloadLink:hover {
+  color: #ffeb3b;
+}

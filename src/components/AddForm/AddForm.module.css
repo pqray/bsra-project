@@ -46,10 +46,10 @@ h2 {
 .rowFull select,
 .rowFull textarea {
   width: 100%;
-  padding: 8px;
+  padding: 4px;
   border: 1px solid var(--border-color);
   border-radius: 5px;
-  font-size: 14px;
+  font-size: 13px;
   background: white;
 }
 
@@ -57,26 +57,28 @@ h2 {
 .row select,
 .row textarea {
   width: 100%;
-  padding: 8px;
+  padding: 4px;
   border: 1px solid var(--border-color);
   border-radius: 5px;
-  font-size: 14px;
+  font-size: 13px;
   background: white;
 }
-textarea{
-  padding: 8px;
+
+textarea {
+  padding: 4px;
 }
 
-label{
-  font-size: 14px;
+label {
+  font-size: 13px;
   margin-bottom: 5px;
 }
-input{
+
+input {
   width: 100%;
-  padding: 8px;
+  padding: 4px;
   border: 1px solid var(--border-color);
   border-radius: 5px;
-  font-size: 14px;
+  font-size: 13px;
   background: white;
 }
 
@@ -111,6 +113,7 @@ button:disabled,
   cursor: not-allowed;
   border: 1px solid #d1d1d1;
 }
+
 .rowFull input:disabled,
 .rowFull select:disabled,
 .rowFull textarea:disabled {
@@ -119,11 +122,16 @@ button:disabled,
   cursor: not-allowed;
   border: 1px solid #d1d1d1;
 }
+
 .rowTriple input:disabled,
 .rowTriple select:disabled,
 .rowTriple textarea:disabled {
   background: #f1f1f1;
   color: #666;
   cursor: not-allowed;
+  width: 50%;
   border: 1px solid #d1d1d1;
+}
+.rowTriple select{
+  width: 50%;
 }

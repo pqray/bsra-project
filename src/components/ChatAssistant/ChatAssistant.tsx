@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import formController from "../../controllers/formController";
 import styles from "./ChatAssistant.module.css";
 import { FiSend } from "react-icons/fi";
@@ -12,11 +12,24 @@ interface ChatAssistantProps {
   externalMessage?: string | null;
   isTyping?: boolean;
 }
+const formatMessage = (text: string) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return text.split(urlRegex).map((part, index) =>
+    urlRegex.test(part) ? (
+      <a key={index} href={part} target="_blank" rel="noopener noreferrer" className={styles.link}>
+        {part}
+      </a>
+    ) : (
+      part
+    )
+  );
+};
 
 const ChatAssistant: React.FC<ChatAssistantProps> = ({ externalMessage, isTyping }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const chatBoxRef = useRef<HTMLDivElement>(null);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -27,7 +40,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ externalMessage, isTyping
     setLoading(true);
 
     try {
-      const response = await formController.sendUserQuestion(input);
+      const response = await formController.sendUserQuestion(input, setLoading);
       if (response?.message?.length) {
         const botResponse: Message = { text: response.message[0], sender: "bot" };
         setMessages((prevMessages) => [...prevMessages, botResponse]);
@@ -45,16 +58,22 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ externalMessage, isTyping
     }
   }, [externalMessage]);
 
+  useEffect(() => {
+    if (chatBoxRef.current) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    }
+  }, [messages, loading]);
+
   return (
     <div className={styles.chatContainer}>
       <h3>Assistente</h3>
-      <div className={styles.chatBox}>
+      <div className={styles.chatBox} ref={chatBoxRef}>
         {messages.map((msg, index) => (
           <div key={index} className={msg.sender === "user" ? styles.userMessage : styles.botMessage}>
-            {msg.text}
+            {formatMessage(msg.text)}
           </div>
         ))}
-        {loading && (
+        {(loading || isTyping) && (
           <div className={styles.typingIndicator}>
             <span className={styles.dot}></span>
             <span className={styles.dot}></span>
@@ -73,7 +92,6 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ externalMessage, isTyping
         />
         <button onClick={sendMessage} className={styles.sendButton}>
           {FiSend({ className: styles.sendIcon })}
-
         </button>
       </div>
     </div>

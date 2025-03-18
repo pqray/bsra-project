@@ -15,20 +15,25 @@ const AddForm: React.FC<AddFormProps> = ({ sendMessageToChat, setTypingStatus })
     estado: "",
     componente: "",
     tecnologia: "",
-    name1: "",
-    name2: "",
-    name3: "",
-    source: "",
+    nome1: "",
+    nome2: "",
+    nome3: "",
+    fonte: "",
     interface: "",
   });
 
-  const [isLoading, setIsLoading] = useState(false);
   const [hasValidated, setHasValidated] = useState(false);
+  const [hasValidatedFonte, setHasValidatedFonte] = useState(false);
+  const [hasValidatedInterface, setHasValidatedInterface] = useState(false);
+  const [hasValidatedNome, setHasValidatedNome] = useState(false);
+
+  const nome1Options = ["bspn", "gpac", "gprs", "idbe", "opin", "ppra", "tcap"];
+  const nome2Options = ["aux", "bff", "srv", "dat", "fed", "lib"];
 
   const isFieldEnabled = (field: string) => {
     const fieldsOrder = [
       "tipo", "descricao", "comunidade", "estado", "componente", "tecnologia",
-      "name1", "name2", "name3", "source", "interface"
+      "nome1", "nome2", "nome3", "fonte", "interface"
     ];
     const index = fieldsOrder.indexOf(field);
     if (index === 0) return true;
@@ -39,39 +44,37 @@ const AddForm: React.FC<AddFormProps> = ({ sendMessageToChat, setTypingStatus })
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
 
-    setTypingStatus(true); // Exibir efeito de digitação no ChatAssistant
-    setIsLoading(true);
+    setTypingStatus(true);
 
     try {
-      const response = await formController.sendDropdownSelection(name, value);
+      const response = await formController.sendDropdownSelection(name, value, setTypingStatus);
       console.log(`Resposta da API para ${name}:`, response);
 
       if (response?.message?.length) {
-        sendMessageToChat(response.message[0]); // Enviar resposta ao ChatAssistant
+        sendMessageToChat(response.message[0]);
       }
     } catch (error) {
       sendMessageToChat(`Erro ao processar ${name}`);
-    } finally {
-      setIsLoading(false);
-      setTypingStatus(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    // Se o usuário altera "descricao", permite nova validação
     if (e.target.name === "descricao") {
       setHasValidated(false);
+    }
+    if (e.target.name === "fonte") {
+      setHasValidatedFonte(false);
     }
   };
 
   const validateFields = async () => {
     if (formData.tipo && formData.descricao && !hasValidated) {
       setTypingStatus(true);
-      setIsLoading(true);
+
       try {
-        const response = await formController.validateTypeAndDescription(formData.tipo, formData.descricao);
+        const response = await formController.validateTypeAndDescription(formData.tipo, formData.descricao, setTypingStatus);
         console.log("Resposta da API:", response);
 
         if (response?.message?.length) {
@@ -79,9 +82,56 @@ const AddForm: React.FC<AddFormProps> = ({ sendMessageToChat, setTypingStatus })
         }
       } catch (error) {
         sendMessageToChat("Erro ao validar o serviço.");
-      } finally {
-        setIsLoading(false);
-        setTypingStatus(false);
+      }
+    }
+  };
+
+  const validateFonte = async () => {
+    if (formData.fonte && !hasValidatedFonte) {
+      setTypingStatus(true);
+
+      try {
+        const response = await formController.sendFonteValidation(formData.fonte, setTypingStatus);
+        console.log("Resposta da API /fonte:", response);
+
+        if (response?.message?.length) {
+          sendMessageToChat(response.message[0]);
+        }
+      } catch (error) {
+        sendMessageToChat("Erro ao validar a fonte.");
+      }
+    }
+  };
+  const validateInterface = async () => {
+    if (formData.interface && !hasValidatedInterface) {
+      setTypingStatus(true);
+
+      try {
+        const response = await formController.sendInterfaceValidation(formData.interface, setTypingStatus);
+        console.log("Resposta da API /interface:", response);
+
+        if (response?.message?.length) {
+          sendMessageToChat(response.message[0]);
+        }
+      } catch (error) {
+        sendMessageToChat("Erro ao validar a interface.");
+      }
+    }
+  };
+  const validateNome = async () => {
+    if (formData.nome1 && formData.nome2 && formData.nome3 && !hasValidatedNome) {
+      const nomeCompleto = `${formData.nome1}-${formData.nome2}-${formData.nome3}`;
+      setTypingStatus(true);
+
+      try {
+        const response = await formController.sendNomeValidation(nomeCompleto, setTypingStatus);
+        console.log("Resposta da API /nome:", response);
+
+        if (response?.message?.length) {
+          sendMessageToChat(response.message[0]);
+        }
+      } catch (error) {
+        sendMessageToChat("Erro ao validar o nome.");
       }
     }
   };
@@ -90,12 +140,41 @@ const AddForm: React.FC<AddFormProps> = ({ sendMessageToChat, setTypingStatus })
     if (field === "descricao") {
       validateFields();
     }
+    if (field === "fonte") {
+      validateFonte();
+    }
+    if (field === "interface") {
+      validateInterface();
+    }
+    if (field === "nome3") {
+      validateNome();
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(JSON.stringify(formData, null, 2));
+
+    setTypingStatus(true);
+
+    try {
+      const response = await formController.sendCadastro(setTypingStatus);
+      console.log("Resposta da API /cadastrar:", response);
+
+      if (response?.csv) {
+        const blob = new Blob([response.csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+
+        sendMessageToChat(
+          `📥 Download CSV`
+        );
+      } else {
+        sendMessageToChat("⚠️ Erro ao gerar o CSV.");
+      }
+    } catch (error) {
+      sendMessageToChat("⚠️ Erro ao cadastrar.");
+    }
   };
+
 
   return (
     <div className={styles.container}>
@@ -130,11 +209,11 @@ const AddForm: React.FC<AddFormProps> = ({ sendMessageToChat, setTypingStatus })
           <label>Comunidade</label>
           <select name="comunidade" value={formData.comunidade} onChange={handleDropdownChange} required disabled={!isFieldEnabled("comunidade")}>
             <option value="">Selecione...</option>
-            <option value="capitalizaçao">Capitalização</option>
-            <option value="previdencia">Previdência</option>
-            <option value="saude">Saúde</option>
+            <option value="capitalização">Capitalização</option>
+            <option value="previdência">Previdência</option>
+            <option value="saúde">Saúde</option>
             <option value="bare">Bare</option>
-            <option value="canais-digitais">Canais Digitais</option>
+            <option value="canais digitais">Canais Digitais</option>
           </select>
         </div>
 
@@ -143,19 +222,18 @@ const AddForm: React.FC<AddFormProps> = ({ sendMessageToChat, setTypingStatus })
           <select name="estado" value={formData.estado} onChange={handleDropdownChange} required disabled={!isFieldEnabled("estado")}>
             <option value="">Selecione...</option>
             <option value="em desenvolvimento">Em desenvolvimento</option>
-            <option value="em producao">Em produção</option>
+            <option value="em produção">Em produção</option>
             <option value="em teste">Em teste</option>
           </select>
         </div>
-
         <div className={styles.row}>
           <label>Componente</label>
           <select name="componente" value={formData.componente} onChange={handleDropdownChange} required disabled={!isFieldEnabled("componente")}>
             <option value="">Selecione...</option>
-            <option value="BFF: Back-end for Front-End">BFF: Back-end for Front-End</option>
-            <option value="SRV: Service">SRV: Service</option>
-            <option value="FED: Front-end">FED: Front-end</option>
-            <option value="LIB: Library">LIB: Library</option>
+            <option value="Back-end for Front-End">BFF: Back-end for Front-End</option>
+            <option value="Service">SRV: Service</option>
+            <option value="Front-end">FED: Front-end</option>
+            <option value="Library">LIB: Library</option>
           </select>
         </div>
 
@@ -163,32 +241,60 @@ const AddForm: React.FC<AddFormProps> = ({ sendMessageToChat, setTypingStatus })
           <label>Tecnologia</label>
           <select name="tecnologia" value={formData.tecnologia} onChange={handleDropdownChange} required disabled={!isFieldEnabled("tecnologia")}>
             <option value="">Selecione...</option>
-            <option value="java">Java</option>
-            <option value="python">Python</option>
-            <option value="node">Node</option>
-            <option value="springboot">Springboot</option>
-            <option value="angular">Angular</option>
-            <option value="cobol">Cobol</option>
+            <option value="Java">Java</option>
+            <option value="Python">Python</option>
+            <option value="Node">Node</option>
+            <option value="SpringBoot">Springboot</option>
+            <option value="Angular">Angular</option>
+            <option value="Cobol">Cobol</option>
           </select>
         </div>
-
         <div className={styles.rowTriple}>
           <label>Nome</label>
           <div className={styles.flexDisplay}>
-            <input type="text" name="name1" value={formData.name1} onChange={handleChange} required disabled={!isFieldEnabled("name1")} />
-            <input type="text" name="name2" value={formData.name2} onChange={handleChange} required disabled={!isFieldEnabled("name2")} />
-            <input type="text" name="name3" value={formData.name3} onChange={handleChange} required disabled={!isFieldEnabled("name3")} />
+            <select name="nome1" value={formData.nome1} onChange={handleDropdownChange} required disabled={!isFieldEnabled("nome1")}>
+              <option value="">Selecione...</option>
+              {nome1Options.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <select name="nome2" value={formData.nome2} onChange={handleDropdownChange} required disabled={!isFieldEnabled("nome2")}>
+              <option value="">Selecione...</option>
+              {nome2Options.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              name="nome3"
+              value={formData.nome3}
+              onChange={handleChange}
+              onBlur={() => handleBlur("nome3")}
+              required
+              disabled={!isFieldEnabled("nome3")}
+            />
           </div>
         </div>
-
         <div className={styles.rowFull}>
           <label>Fonte</label>
-          <input type="text" name="source" value={formData.source} onChange={handleChange} required disabled={!isFieldEnabled("source")} />
+          <input
+            type="text"
+            name="fonte"
+            value={formData.fonte}
+            onChange={handleChange}
+            onBlur={() => handleBlur("fonte")}
+            required
+            disabled={!isFieldEnabled("fonte")}
+          />
         </div>
 
         <div className={styles.rowFull}>
           <label>Interface</label>
-          <input type="text" name="interface" value={formData.interface} onChange={handleChange} required disabled={!isFieldEnabled("interface")} />
+          <input type="text" name="interface" value={formData.interface} onChange={handleChange} onBlur={() => handleBlur("interface")} required disabled={!isFieldEnabled("interface")} />
         </div>
 
         <button type="submit" disabled={!isFieldEnabled("interface")}>Cadastrar</button>
