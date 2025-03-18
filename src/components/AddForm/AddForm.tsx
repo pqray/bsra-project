@@ -24,8 +24,8 @@ const AddForm: React.FC<AddFormProps> = ({ sendMessageToChat, setTypingStatus })
 
   const [hasValidated, setHasValidated] = useState(false);
   const [hasValidatedFonte, setHasValidatedFonte] = useState(false);
-  const [hasValidatedInterface, setHasValidatedInterface] = useState(false);
-  const [hasValidatedNome, setHasValidatedNome] = useState(false);
+  const [hasValidatedInterface] = useState(false);
+  const [hasValidatedNome] = useState(false);
 
   const nome1Options = ["bspn", "gpac", "gprs", "idbe", "opin", "ppra", "tcap"];
   const nome2Options = ["aux", "bff", "srv", "dat", "fed", "lib"];
@@ -162,7 +162,7 @@ const AddForm: React.FC<AddFormProps> = ({ sendMessageToChat, setTypingStatus })
 
       if (response?.csv) {
         const blob = new Blob([response.csv], { type: "text/csv" });
-        const url = URL.createObjectURL(blob);
+        // const url = URL.createObjectURL(blob);
 
         sendMessageToChat(
           `📥 Download CSV`
