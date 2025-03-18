@@ -161,7 +161,7 @@ const AddForm: React.FC<AddFormProps> = ({ sendMessageToChat, setTypingStatus })
       console.log("Resposta da API /cadastrar:", response);
 
       if (response?.csv) {
-        const blob = new Blob([response.csv], { type: "text/csv" });
+        // const blob = new Blob([response.csv], { type: "text/csv" });
         // const url = URL.createObjectURL(blob);
 
         sendMessageToChat(
